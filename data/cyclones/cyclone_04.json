@@ -1,0 +1,8 @@
+{
+  "disaster_type": "cyclone",
+  "location": "Bangladesh Coast",
+  "year": 2018,
+  "severity": "medium",
+  "data_source": "satellite imagery + text report",
+  "confidence": 0.83
+}
