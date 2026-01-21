@@ -55,7 +55,17 @@ docker run -p 6333:6333 qdrant/qdrant
 python ingest_all.py
 ```
 
-### 4. Run recommendation demo
+### 4. Run memory update
+```bash
+python memory_update.py
+```
+
+### 5. Run memory reinforcement
+```bash
+python memory_reinforce.py
+```
+
+### 6. Run recommendation demo
 ```bash
 python recommend.py
 ```
@@ -69,9 +79,33 @@ http://localhost:6333/dashboard
 
 Recommended visualization:
 
-UMAP projection of text_vector
-
+## UMAP projection of text_vector
 Colored by disaster_type
+```bash
+{
+  "limit": 300,
+  "using": "text_vector",
+  "algorithm": "UMAP",
+  "color_by": {
+    "payload": "disaster_type"
+  }
+}
+
+```
+## UMAP projection of image_vector
+Colored by disaster_type
+```bash
+{
+  "limit": 200,
+  "using": "image_vector",
+  "algorithm": "UMAP",
+  "color_by": {
+    "payload": "disaster_type"
+  }
+}
+
+```
+
 
 ## Ethics & Limitations
 
