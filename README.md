@@ -46,9 +46,13 @@ pip install -r requirements.txt
 ```
 
 ### 2. Start Qdrant (Docker)
+
+keep terminal running 
+
 ```bash
 docker run -p 6333:6333 qdrant/qdrant
 ```
+OPEN NEW TERMINAL
 
 ### 3. Ingest disaster data
 ```bash
