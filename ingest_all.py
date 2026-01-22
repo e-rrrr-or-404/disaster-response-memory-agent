@@ -10,9 +10,8 @@ import torch
 import clip
 from PIL import Image
 
-# -----------------------
-# Load models
-# -----------------------
+# Load embedding models
+# Text + Image dono ke liye
 print("Loading models...")
 
 text_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
@@ -22,13 +21,13 @@ clip_model, clip_preprocess = clip.load("ViT-B/32", device=device)
 
 print("Models loaded")
 
-# -----------------------
-# Embedding functions
-# -----------------------
+# Embedding helper functions
 def get_text_embedding(text: str):
+    # Text report → 384-dim vector
     return text_model.encode(text).tolist()
 
 def get_image_embedding(image_path: str):
+    # Satellite image → 512-dim normalized vector
     image = Image.open(image_path).convert("RGB")
     image_input = clip_preprocess(image).unsqueeze(0).to(device)
 
@@ -38,15 +37,12 @@ def get_image_embedding(image_path: str):
     image_features /= image_features.norm(dim=-1, keepdim=True)
     return image_features.cpu().numpy()[0].tolist()
 
-# -----------------------
 # Connect to Qdrant
-# -----------------------
 client = QdrantClient(url="http://localhost:6333")
 print("Connected to Qdrant")
 
-# -----------------------
-# Create collection (clean)
-# -----------------------
+# Create fresh collection
+# Multi-vector: text + image
 if client.collection_exists("disasters"):
     client.delete_collection("disasters")
 
@@ -60,9 +56,7 @@ client.create_collection(
 
 print("Collection created")
 
-# -----------------------
-# Batch ingest all disasters
-# -----------------------
+# Batch ingest disaster data
 BASE_DIR = "data"
 folders = ["floods", "fires", "cyclones"]
 
@@ -81,6 +75,7 @@ for folder in folders:
         image_path = os.path.join(folder_path, base_name + ".jpg")
         json_path = os.path.join(folder_path, base_name + ".json")
 
+        # Skip incomplete records
         if not (os.path.exists(image_path) and os.path.exists(json_path)):
             continue
 
@@ -90,9 +85,11 @@ for folder in folders:
         with open(json_path, "r") as f:
             metadata = json.load(f)
 
+        # Generate embeddings
         text_vector = get_text_embedding(report_text)
         image_vector = get_image_embedding(image_path)
 
+        # One disaster = one point with two vectors
         points.append({
             "id": str(uuid.uuid4()),
             "vector": {
@@ -105,9 +102,8 @@ for folder in folders:
 client.upsert(collection_name="disasters", points=points)
 print(f"Ingested {len(points)} disaster events")
 
-# -----------------------
-# TEXT SEARCH TEST
-# -----------------------
+
+# TEXT SEARCH sanity test
 print("\nTEXT SEARCH TEST")
 
 text_hits = client.query_points(
@@ -120,9 +116,7 @@ text_hits = client.query_points(
 for p in text_hits.points:
     print(p.payload, p.score)
 
-# -----------------------
-# IMAGE SEARCH TEST
-# -----------------------
+# IMAGE SEARCH sanity test
 print("\nIMAGE SEARCH TEST")
 
 test_image = "data/floods/flood_01.jpg"
@@ -138,9 +132,7 @@ image_hits = client.query_points(
 for p in image_hits.points:
     print(p.payload, p.score)
 
-# -----------------------
-# METADATA FILTER TEST
-# -----------------------
+# METADATA FILTER test
 print("\nMETADATA FILTER TEST (floods only)")
 
 flood_filter = Filter(
